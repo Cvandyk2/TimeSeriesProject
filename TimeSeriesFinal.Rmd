@@ -1,0 +1,98 @@
+
+---
+title: "TimeSeriesFinalProject"
+author: "GroupBeer "
+date: "2024-02-20"
+output: html_document
+---
+
+```{r}
+library(data.table)
+library(dplyr)
+library(forecast)
+library(caret)
+library(neuralnet)
+library(gains)
+library(ggplot2)
+
+```
+
+
+
+```{r}
+OctoberFest <- read.csv("~/Desktop/GraduateSchool/S3/Time Series/Data/oktoberfest 1985 2022.csv", header=T, stringsAsFactors=T)
+
+Beer <- ts(OctoberFest$Beer_consumption)
+visitors <- ts(OctoberFest$Visitors_total)
+Chicken <- ts(OctoberFest$Chicken_consumption)
+
+plot(OctoberFest$Year, visitors, type="l", col="darkorange2")
+plot(OctoberFest$Year, Beer, type="l", col="darkorange2")
+plot(OctoberFest$Year, Chicken, type="l", col="darkorange2")
+
+par(mfrow=c(1,2))
+Acf(Beer, main="ACF of Beer")
+Pacf(Beer, main="PACF of Beer ")
+
+par(mfrow=c(1,2))
+Acf(visitors, main="ACF of Visitors")
+Pacf(visitors, main="PACF of Visitors ")
+
+par(mfrow=c(1,2))
+Acf(Chicken, main="ACF of Chicken")
+Pacf(Chicken, main="PACF of Chicken ")
+```
+
+
+```{r}
+#Beer
+DT_Beer<-tslm(Beer~trend+I(trend^2)+I(trend^3))
+summary(DT_Beer)
+
+DTBeer<-DT_Beer$residuals
+par(mfrow=c(1,1))
+plot(DTBeer)
+
+par(mfrow=c(1,2))
+Acf(DTBeer, col="red", main="ACF Function")
+Pacf(DTBeer, col="blue", main="PACF Function")
+```
+
+
+```{r}
+#Visitors
+DT_visitors<-tslm(visitors~trend)
+summary(DT_visitors)
+
+DTVisitors<-DT_visitors$residuals
+par(mfrow=c(1,1))
+plot(DTVisitors)
+
+par(mfrow=c(1,2))
+Acf(DTVisitors, col="red", main="ACF Function")
+Pacf(DTVisitors, col="blue", main="PACF Function")
+```
+
+
+```{r}
+#Chicken
+OctoberFest$SB <- ifelse(OctoberFest$Year < 2000, 1, 0)
+SB <- ts(OctoberFest$SB)
+
+DT_Chicken<-tslm(Chicken~trend+SB)
+summary(DT_Chicken)
+
+DTChicken<-DT_Chicken$residuals
+par(mfrow=c(1,1))
+plot(DTChicken)
+
+par(mfrow=c(1,2))
+Acf(DTChicken, col="red", main="ACF Function")
+Pacf(DTChicken, col="blue", main="PACF Function")
+
+
+```
+
+
+
+

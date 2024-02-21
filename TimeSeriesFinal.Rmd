@@ -68,7 +68,6 @@ Pacf(DTBeer, col="blue", main="PACF Function")
 
 ```{r}
 #Chicken
-#OctoberFest$SB <- ifelse(OctoberFest$Year < 2000, 1, 0)
 OctoberFest$SB <- ifelse(OctoberFest$Year < 2000, 1, 0)
 
 SB <- ts(OctoberFest$SB)

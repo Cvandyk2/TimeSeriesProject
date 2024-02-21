@@ -87,5 +87,34 @@ Pacf(DTChicken, col="blue", main="PACF Function")
 ```
 
 
+Needs correction
+```{r}
+#Arima Beer Forecast
+Beer.ts <- ts(OctoberFest$Beer_consumption, start = c(1985, 1), end = c(2022, 1), freq = 1) 
+nValid <- 5
+nBeer <- length(Beer.ts) - nValid
+Beer.ts <- window(Beer.ts, start = c(1985, 1), end = c(2022, nBeer))
+valid.ts <- window(Beer.ts, start = c(1985, nBeer + 1), end = c(2022, nBeer + nValid))
+
+DTBeer<-DT_Beer$residuals
+Beer.res.arima <- Arima(DTBeer, order = c(1,0,0))
+Beer.res.arima.pred <- forecast(Beer.res.arima, h = nValid) 
+
+par(mfrow=c(1,1)) 
+plot(Beer.res.arima.pred)
+lines(Beer.res.arima.pred$fitted, lwd = 2, col = "purple")
+axis(1, at = seq(1985, 2015, 1), labels = format(seq(1985, 2015, 1)))
+
+
+summary(Beer.res.arima)
+
+
+AR_1_resids<-Beer.res.arima$residuals 
+par(mfrow=c(1,2))
+Acf(AR_1_resids)
+Pacf(AR_1_resids)
+
+```
+
 
 

@@ -30,32 +30,10 @@ plot(OctoberFest$Year, visitors, type="l", col="darkorange2")
 plot(OctoberFest$Year, Beer, type="l", col="darkorange2")
 plot(OctoberFest$Year, Chicken, type="l", col="darkorange2")
 
-par(mfrow=c(1,2))
-Acf(Beer, main="ACF of Beer")
-Pacf(Beer, main="PACF of Beer ")
+# Beer <- ts(OctoberFest$Beer_consumption, start = c(1985, 1), end = c(2022, 1), freq = 1)
+# visitors <- ts(OctoberFest$Visitors_total, start = c(1985, 1), end = c(2022, 1), freq = 1)
+# Chicken <- ts(OctoberFest$Chicken_consumption, start = c(1985, 1), end = c(2022, 1), freq = 1)
 
-par(mfrow=c(1,2))
-Acf(visitors, main="ACF of Visitors")
-Pacf(visitors, main="PACF of Visitors ")
-
-par(mfrow=c(1,2))
-Acf(Chicken, main="ACF of Chicken")
-Pacf(Chicken, main="PACF of Chicken ")
-```
-
-
-```{r}
-#Beer
-DT_Beer<-tslm(Beer~trend+I(trend^2)+I(trend^3))
-summary(DT_Beer)
-
-DTBeer<-DT_Beer$residuals
-par(mfrow=c(1,1))
-plot(DTBeer)
-
-par(mfrow=c(1,2))
-Acf(DTBeer, col="red", main="ACF Function")
-Pacf(DTBeer, col="blue", main="PACF Function")
 ```
 
 
@@ -73,10 +51,26 @@ Acf(DTVisitors, col="red", main="ACF Function")
 Pacf(DTVisitors, col="blue", main="PACF Function")
 ```
 
+```{r}
+#Beer
+DT_Beer<-tslm(Beer~trend+I(trend^2)+I(trend^3))
+summary(DT_Beer)
+
+DTBeer<-DT_Beer$residuals
+par(mfrow=c(1,1))
+plot(DTBeer)
+
+par(mfrow=c(1,2))
+Acf(DTBeer, col="red", main="ACF Function")
+Pacf(DTBeer, col="blue", main="PACF Function")
+```
+
 
 ```{r}
 #Chicken
+#OctoberFest$SB <- ifelse(OctoberFest$Year < 2000, 1, 0)
 OctoberFest$SB <- ifelse(OctoberFest$Year < 2000, 1, 0)
+
 SB <- ts(OctoberFest$SB)
 
 DT_Chicken<-tslm(Chicken~trend+SB)

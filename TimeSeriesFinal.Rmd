@@ -27,10 +27,15 @@ OctoberFest <- OctoberFest[1:35,]
 Beer <- ts(OctoberFest$Beer_consumption)
 Visitors <- ts(OctoberFest$Visitors_total)
 Chicken <- ts(OctoberFest$Chicken_consumption)
+BeerPrice <- ts(OctoberFest$Beer_price)
+ChickenPrice <- ts(OctoberFest$Chicken_Price)
 
 plot(OctoberFest$Year, Visitors, type="l", col="darkorange2")
 plot(OctoberFest$Year, Beer, type="l", col="darkorange2")
 plot(OctoberFest$Year, Chicken, type="l", col="darkorange2")
+plot(OctoberFest$Year, BeerPrice, type="l", col="darkorange2")
+plot(OctoberFest$Year, ChickenPrice, type="l", col="darkorange2")
+
 
 # Beer <- ts(OctoberFest$Beer_consumption, start = c(1985, 1), end = c(2019, 1), freq = 1)
 # visitors <- ts(OctoberFest$Visitors_total, start = c(1985, 1), end = c(2019, 1), freq = 1)
@@ -67,10 +72,24 @@ Acf(DTBeer, col="red", main="ACF Function")
 Pacf(DTBeer, col="blue", main="PACF Function")
 ```
 
+```{r}
+#Beer Price
+DT_BeerPrice<-tslm(BeerPrice~trend+I(trend^2))
+summary(DT_BeerPrice)
+
+DTBeerPrice<-DT_BeerPrice$residuals
+par(mfrow=c(1,1))
+plot(DTBeerPrice)
+
+par(mfrow=c(1,2))
+Acf(DTBeerPrice, col="red", main="ACF Function")
+Pacf(DTBeerPrice, col="blue", main="PACF Function")
+```
+
 
 ```{r}
 #Chicken
-OctoberFest$SB <- ifelse(OctoberFest$Year < 2000, 1, 0)
+OctoberFest$SB <- ifelse(OctoberFest$Year < 2001, 1, 0)
 
 SB <- ts(OctoberFest$SB, start = c(1985), end = c(2019), freq = 1)
 
@@ -84,9 +103,28 @@ plot(DTChicken)
 par(mfrow=c(1,2))
 Acf(DTChicken, col="red", main="ACF Function")
 Pacf(DTChicken, col="blue", main="PACF Function")
+```
+
+```{r}
+#Chicken Price
+OctoberFest$SB2 <- ifelse(OctoberFest$Year < 2000, 0, 1)
+
+SB2 <- ts(OctoberFest$SB2, start = c(1985), end = c(2019), freq = 1)
+
+DT_ChickenPrice<-tslm(ChickenPrice~trend+SB2)
+summary(DT_ChickenPrice)
+
+DTChickenPrice<-DT_ChickenPrice$residuals
+par(mfrow=c(1,1))
+plot(DTChickenPrice)
+
+par(mfrow=c(1,2))
+Acf(DTChickenPrice, col="red", main="ACF Function")
+Pacf(DTChickenPrice, col="blue", main="PACF Function")
 
 
 ```
+
 
 
 ```{r}
@@ -117,6 +155,37 @@ BeerAR_1_resids<-Beer.res.arima$residuals
 par(mfrow=c(1,2))
 Acf(BeerAR_1_resids)
 Pacf(BeerAR_1_resids)
+
+```
+
+```{r}
+#Arima Beer Price Forecast
+BeerPrice.ts <- ts(OctoberFest$Beer_price, start = c(1985), end = c(2019), freq = 1)
+nValid <- 8
+nTrain <- length(BeerPrice.ts) - nValid
+BeerPrice.ts.train <- window(BeerPrice.ts, start = 1985, end = 2019 - nValid)
+valid.ts <- window(BeerPrice.ts, start = 2019 - nValid + 1, end = 2019)
+
+train.lm.BeerPrice <- tslm(BeerPrice.ts ~ trend + I(trend^2))
+BeerPrice_resids <- train.lm.BeerPrice$residuals
+
+BeerPrice.res.arima <- Arima(BeerPrice_resids, order = c(2,0,0))
+BeerPrice.res.arima.pred <- forecast(BeerPrice.res.arima, h = nValid, level = 0)
+
+par(mfrow=c(1,1))
+plot(BeerPrice.res.arima.pred)
+lines(BeerPrice.res.arima.pred$fitted, lwd = 2, col = "purple")
+axis(1, at = seq(1985, 2030, 5), labels = format(seq(1985, 2030, 5)))
+lines(BeerPrice_resids, ylim = c(-250, 250), ylab = "Residuals",
+xlab = "Time", bty = "l", xaxt = "n", xlim = c(1995,2030.25), main = "", col="darkorange2")
+legend("topleft", legend = c("Residuals", "Prediction"), lty = 1, col = c("darkorange2", "purple"), bty = "n")
+
+summary(BeerPrice.res.arima)
+
+BeerPriceAR_1_resids<-BeerPrice.res.arima$residuals
+par(mfrow=c(1,2))
+Acf(BeerPriceAR_1_resids)
+Pacf(BeerPriceAR_1_resids)
 
 ```
 
@@ -153,7 +222,39 @@ Pacf(ChickenAR_1_resids)
 ```
 
 ```{r}
-#Arima Chicken Forecast
+# Arima ChickenPrice Forecast
+ChickenPrice.ts <- ts(OctoberFest$Chicken_Price, start = c(1985), end = c(2019), freq = 1)
+nValid <- 8
+nTrain <- length(ChickenPrice.ts) - nValid
+ChickenPrice.ts.train <- window(ChickenPrice.ts, start = 1985, end = 2019 - nValid)
+valid.ts <- window(ChickenPrice.ts, start = 2019 - nValid + 1, end = 2019)
+
+train.lm.ChickenPrice <- tslm(ChickenPrice.ts~trend+SB2)
+ChickenPrice_resids <- train.lm.ChickenPrice$residuals
+
+ChickenPrice.res.arima <- Arima(ChickenPrice_resids, order = c(1,0,0))
+ChickenPrice.res.arima.pred <- forecast(ChickenPrice.res.arima, h = nValid, level = 0)
+
+par(mfrow=c(1,1))
+plot(ChickenPrice.res.arima.pred)
+lines(ChickenPrice.res.arima.pred$fitted, lwd = 2, col = "purple")
+axis(1, at = seq(1985, 2030, 5), labels = format(seq(1985, 2030, 5)))
+lines(ChickenPrice_resids, ylim = c(-250, 250), ylab = "Residuals",
+xlab = "Time", bty = "l", xaxt = "n", xlim = c(1995,2030.25), main = "", col="darkorange2")
+legend("topleft", legend = c("Residuals", "Prediction"), lty = 1, col = c("darkorange2", "purple"), bty = "n")
+
+summary(ChickenPrice.res.arima)
+
+ChickenPriceAR_1_resids<-ChickenPrice.res.arima$residuals
+par(mfrow=c(1,2))
+Acf(ChickenPriceAR_1_resids)
+Pacf(ChickenPriceAR_1_resids)
+
+```
+
+
+```{r}
+#Arima Visitors Forecast
 Visitors.ts <- ts(OctoberFest$Visitors_total, start = c(1985), end = c(2019), freq = 1)
 nValid <- 8
 nTrain <- length(Visitors.ts) - nValid
@@ -183,13 +284,80 @@ Pacf(VisitorsAR_1_resids)
 
 ```
 
-Forecast Beer
+
 ```{r}
+# Forecast Beer Consumption
+beer2019.residual <- window(train.lm.beer$residuals, start = c(2019), end = c(2019)) 
+plugin.forecast <- beer2019.residual*Beer.res.arima$coef[1] + beer2019.residual*Beer.res.arima$coef[2] + Beer.res.arima$coef[3]
 
+print(plugin.forecast)
 
+beer2019.residual <- window(train.lm.beer$residuals, start = c(1985), end = c(2019))
+t<-length(beer2019.residual)+1
+beer2020_fitted<-train.lm.beer$coefficients[1]+train.lm.beer$coefficients[2]*t+
+train.lm.beer$coefficients[3]*(t^2)+train.lm.beer$coefficients[4]*(t^3)
+beer2020_fitted+plugin.forecast
 
 ```
 
 
+```{r}
+# Forecast Chicken Consumption
+chicken2019.residual <- window(train.lm.Chicken$residuals, start = c(2019), end = c(2019))
+plugin.forecast <- chicken2019.residual*Chicken.res.arima$coef[1] + Chicken.res.arima$coef[2]
+
+print(plugin.forecast)
+
+chicken2019.residual <- window(train.lm.Chicken$residuals, start = c(1985), end = c(2019))
+t<-length(chicken2019.residual)+1
+chicken2020_fitted<-train.lm.Chicken$coefficients[1]+train.lm.Chicken$coefficients[2]*t + train.lm.Chicken$coefficients[3]*(0) #0 is the value of SB after 2000
+chicken2020_fitted+plugin.forecast
+
+```
+```{r}
+# Forecast Chicken Price
+chickenPrice2019.residual <- window(train.lm.ChickenPrice$residuals, start = c(2019), end = c(2019))
+plugin.forecast <- chickenPrice2019.residual*ChickenPrice.res.arima$coef[1] + ChickenPrice.res.arima$coef[2]
+
+
+print(plugin.forecast)
+
+chickenPrice2019.residual <- window(train.lm.ChickenPrice$residuals, start = c(1985), end = c(2019))
+t<-length(chickenPrice2019.residual)+1
+chickenPrice2020_fitted<-train.lm.ChickenPrice$coefficients[1]+train.lm.ChickenPrice$coefficients[2]*t + train.lm.ChickenPrice$coefficients[3]*(1) #1 is the value of SB after 2000
+
+chickenPrice2020_fitted+plugin.forecast
+```
+
+```{r}
+# Forecast Beer Price
+beerPrice2019.residual <- window(train.lm.BeerPrice$residuals, start = c(2019), end = c(2019))
+plugin.forecast <- beerPrice2019.residual*BeerPrice.res.arima$coef[1] + beerPrice2019.residual*BeerPrice.res.arima$coef[2] + BeerPrice.res.arima$coef[3]
+
+
+print(plugin.forecast)
+
+beerPrice2019.residual <- window(train.lm.BeerPrice$residuals, start = c(1985), end = c(2019))
+t<-length(beerPrice2019.residual)+1
+beerPrice2020_fitted<-train.lm.BeerPrice$coefficients[1]+train.lm.BeerPrice$coefficients[2]*t + train.lm.BeerPrice$coefficients[3]*(t^2)
+
+beerPrice2020_fitted+plugin.forecast
+```
+
+
+```{r}
+# Forecast Visitors
+visitors2019.residual <- window(train.lm.Visitors$residuals, start = c(2019), end = c(2019))
+plugin.forecast <- visitors2019.residual*Visitors.res.arima$coef[1] + Visitors.res.arima$coef[2]
+
+
+print(plugin.forecast)
+
+visitors2019.residual <- window(train.lm.Visitors$residuals, start = c(1985), end = c(2019))
+t<-length(visitors2019.residual)+1
+visitors2020_fitted<-train.lm.Visitors$coefficients[1]+train.lm.Visitors$coefficients[2]*t 
+
+visitors2020_fitted+plugin.forecast
+```
 
 

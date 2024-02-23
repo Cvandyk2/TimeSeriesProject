@@ -23,10 +23,10 @@ library(ggplot2)
 OctoberFest <- read.csv("~/Desktop/GraduateSchool/S3/Time Series/Data/oktoberfest 1985 2022.csv", header=T, stringsAsFactors=T)
 
 Beer <- ts(OctoberFest$Beer_consumption)
-visitors <- ts(OctoberFest$Visitors_total)
+Visitors <- ts(OctoberFest$Visitors_total)
 Chicken <- ts(OctoberFest$Chicken_consumption)
 
-plot(OctoberFest$Year, visitors, type="l", col="darkorange2")
+plot(OctoberFest$Year, Visitors, type="l", col="darkorange2")
 plot(OctoberFest$Year, Beer, type="l", col="darkorange2")
 plot(OctoberFest$Year, Chicken, type="l", col="darkorange2")
 
@@ -39,10 +39,10 @@ plot(OctoberFest$Year, Chicken, type="l", col="darkorange2")
 
 ```{r}
 #Visitors
-DT_visitors<-tslm(visitors~trend)
-summary(DT_visitors)
+DT_Visitors<-tslm(Visitors~trend)
+summary(DT_Visitors)
 
-DTVisitors<-DT_visitors$residuals
+DTVisitors<-DT_Visitors$residuals
 par(mfrow=c(1,1))
 plot(DTVisitors)
 
@@ -87,34 +87,102 @@ Pacf(DTChicken, col="blue", main="PACF Function")
 ```
 
 
-Needs correction
 ```{r}
 #Arima Beer Forecast
 Beer.ts <- ts(OctoberFest$Beer_consumption, start = c(1985, 1), end = c(2022, 1), freq = 1) 
-nValid <- 5
-nBeer <- length(Beer.ts) - nValid
-Beer.ts <- window(Beer.ts, start = c(1985, 1), end = c(2022, nBeer))
-valid.ts <- window(Beer.ts, start = c(1985, nBeer + 1), end = c(2022, nBeer + nValid))
+nValid <- 8
+nTrain <- length(Beer.ts) - nValid
+Beer.ts <- window(Beer.ts, start = c(1985, 1), end = c(1985, nTrain), freq = 1)
+valid.ts <- window(Beer.ts, start = c(1985, nTrain + 1), end = c(1985, nTrain + nValid), freq = 1)
 
-DTBeer<-DT_Beer$residuals
-Beer.res.arima <- Arima(DTBeer, order = c(1,0,0))
-Beer.res.arima.pred <- forecast(Beer.res.arima, h = nValid) 
+train.lm.beer <- tslm(Beer.ts ~ trend + I(trend^2) + I(trend^3))
+beer_resids <- train.lm.beer$residuals
+
+Beer.res.arima <- Arima(beer_resids, order = c(2,0,1))
+Beer.res.arima.pred <- forecast(Beer.res.arima, h = nValid, level = 0)
 
 par(mfrow=c(1,1)) 
-plot(Beer.res.arima.pred)
+plot(Beer.res.arima.pred) 
 lines(Beer.res.arima.pred$fitted, lwd = 2, col = "purple")
-axis(1, at = seq(1985, 2015, 1), labels = format(seq(1985, 2015, 1)))
+axis(1, at = seq(1985, 2024, 1), labels = format(seq(1985, 2024, 1)))
+lines(DTBeer, ylim = c(-250, 250), ylab = "Residuals",
+xlab = "Time", bty = "l", xaxt = "n", xlim = c(1995,2024.25), main = "", col="darkorange2")
+legend("topleft", legend = c("Residuals", "Prediction"), lty = 1, col = c("darkorange2", "purple"), bty = "n")
 
 
 summary(Beer.res.arima)
 
 
-AR_1_resids<-Beer.res.arima$residuals 
+BeerAR_1_resids<-Beer.res.arima$residuals 
 par(mfrow=c(1,2))
-Acf(AR_1_resids)
-Pacf(AR_1_resids)
+Acf(BeerAR_1_resids)
+Pacf(BeerAR_1_resids)
 
 ```
+```{r}
+#Arima Chicken Forecast
+Chicken.ts <- ts(OctoberFest$Chicken_consumption, start = c(1985, 1), end = c(2022, 1), freq = 1) 
+nValid <- 8
+nChicken <- length(Chicken.ts) - nValid
+Chicken.ts <- window(Chicken.ts, start = c(1985, 1), end = c(2022, nChicken))
+valid.ts <- window(Chicken.ts, start = c(1985, nChicken + 1), end = c(2022, nChicken + nValid))
+
+DTChicken<-DT_Chicken$residuals
+Chicken.res.arima <- Arima(DTChicken, order = c(1,1,0))
+Chicken.res.arima.pred <- forecast(Chicken.res.arima, h = nValid, level = 0)
+
+par(mfrow=c(1,1)) 
+plot(Chicken.res.arima.pred) 
+lines(Chicken.res.arima.pred$fitted, lwd = 2, col = "purple")
+axis(1, at = seq(1985, 2015, 1), labels = format(seq(1985, 2015, 1)))
+lines(DTChicken, ylim = c(-250, 250), ylab = "Residuals",
+xlab = "Time", bty = "l", xaxt = "n", xlim = c(1995,2015.25), main = "", col="darkorange2")
+legend("topleft", legend = c("Residuals", "Fitted"), lty = 1, col = c("darkorange2", "purple"), bty = "n")
+
+
+summary(Chicken.res.arima)
+
+
+ChickenAR_1_resids<-Chicken.res.arima$residuals 
+par(mfrow=c(1,2))
+Acf(ChickenAR_1_resids)
+Pacf(ChickenAR_1_resids)
+
+```
+
+```{r}
+#Arima Visitors Forecast
+Visitors.ts <- ts(OctoberFest$Visitors_total, start = c(1985, 1), end = c(2022, 1), freq = 1) 
+nValid <- 8
+nVisitors <- length(Visitors.ts) - nValid
+Visitors.ts <- window(Visitors.ts, start = c(1985, 1), end = c(2022, nVisitors))
+valid.ts <- window(Visitors.ts, start = c(1985, nVisitors + 1), end = c(2022, nVisitors + nValid))
+
+DTVisitors<-DT_Visitors$residuals
+Visitors.res.arima <- Arima(DTVisitors, order = c(2,0,0))
+Visitors.res.arima.pred <- forecast(Visitors.res.arima, h = nValid, level = 0)
+
+par(mfrow=c(1,1)) 
+plot(Visitors.res.arima.pred) 
+lines(Visitors.res.arima.pred$fitted, lwd = 2, col = "purple")
+axis(1, at = seq(1985, 2015, 1), labels = format(seq(1985, 2015, 1)))
+lines(DTVisitors, ylim = c(-250, 250), ylab = "Residuals",
+xlab = "Time", bty = "l", xaxt = "n", xlim = c(1995,2015.25), main = "", col="darkorange2")
+legend("topleft", legend = c("Residuals", "Fitted"), lty = 1, col = c("darkorange2", "purple"), bty = "n")
+
+
+summary(Visitors.res.arima)
+
+
+VisitorsAR_1_resids<-Visitors.res.arima$residuals 
+par(mfrow=c(1,2))
+Acf(VisitorsAR_1_resids)
+Pacf(VisitorsAR_1_resids)
+
+```
+
+
+
 
 
 
